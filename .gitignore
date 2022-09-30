@@ -1,0 +1,11 @@
+# IPython Notebook
+.ipynb_checkpoints
+
+# data
+data/*
+
+# emacs files
+*~
+
+# MAC files
+.DS_Store
