@@ -6,6 +6,7 @@ data/*
 
 # emacs files
 *~
+*/*~
 
 # MAC files
 .DS_Store
