@@ -280,3 +280,7 @@ def get_EB_data(path, source, context, format='xls', sheet=2,
               end='')
         print("à l'arrêt")
     return data.reset_index()
+
+"""
+initial code developped by Tiphaine GRAILLAT for ALSTOM
+"""

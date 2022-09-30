@@ -163,3 +163,8 @@ def trace_dispersion_train(data, cols=cols_precision_train,
             label=f"Moyenne = {data[cols[1]].mean():.2f}")
     plt.legend()
     return plt.show()
+
+
+"""
+initial code developped by Tiphaine GRAILLAT for ALSTOM
+"""
