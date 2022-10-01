@@ -7,9 +7,13 @@ __pycache__/
 # data
 data/*
 
-# emacs files
+# emacs backup files
 *~
 */*~
+
+# emacs autosave files
+#*#
+*/#*#
 
 # MAC files
 .DS_Store
