@@ -50,8 +50,7 @@ def get_movement_data(path, source, context, format='xls', sheet=0,
                        mapping_interstations=interstations,
                        rename_cols=movement_cols_name,
                        drop_cols=cols_movement_drop):
-    """
-    import movement data from path into a pandas.DataFrame adding source,
+    """import movement data from path into a pandas.DataFrame adding source,
     context and version as new columns to uniquely identify imported data
     and label graphs.
     Data file can be in two formats, xls (default) or csv.
@@ -91,15 +90,7 @@ def get_movement_data(path, source, context, format='xls', sheet=0,
     drop_cols : list, optional
         list of columns to drop.
         To disable, use [].
-        The default value is 'cols_movement drop' defined in this module.
-    
-    
-    Raises
-    ------
-    XLRDError
-        For error in case the 'sheet' input does not match with an actual
-        sheet in the excel file from path.
-
+        The default value is 'cols_movement_drop' defined in this module.
 
     Returns
     -------
@@ -107,6 +98,13 @@ def get_movement_data(path, source, context, format='xls', sheet=0,
         the data as a pandas.DataFrame with additional columns describing
         the source and context of the data
 
+    Raises
+    ------
+    XLRDError
+        For error in case the 'sheet' input does not match with an actual
+        sheet in the excel file from path.
+
+    
     """
     if format == 'xls':
         try:
@@ -164,6 +162,19 @@ def get_movement_data(path, source, context, format='xls', sheet=0,
 
 
 def determine_type_movement(mouvement, mapping):
+    """
+
+    Parameters
+    ----------
+    mouvement :
+        
+    mapping :
+        
+
+    Returns
+    -------
+
+    """
     # force mouvement sous forme de sring
     mouvement = str(mouvement)
     if mouvement in mapping['intersecteurs']:
@@ -183,8 +194,7 @@ def determine_type_movement(mouvement, mapping):
 def get_EB_data(path, source, context, format='xls', sheet=2, 
                        build=None, dropna=True, en_mouvement=True,
                        drop_cols=cols_EB_drop):
-    """
-    import EB data from path into a pandas.DataFrame adding source,
+    """import EB data from path into a pandas.DataFrame adding source,
     context and version as new columns to uniquely identify imported data
     and label graphs.
     Data file can be in two formats, xls (default) or csv.
@@ -199,7 +209,7 @@ def get_EB_data(path, source, context, format='xls', sheet=2,
     source : string
         source of data as string. Will be added to the data as new col.
         Typically 'FIVP', 'Site'.
-    context: string
+    context : string
         context of data as a string. Will be added to the data as new col.
         Typically 'mono-train', 'multi-trains'.
     format : string, optional
@@ -220,18 +230,19 @@ def get_EB_data(path, source, context, format='xls', sheet=2,
         To disable, use [].
         The default is cols_EB_drop.
 
-    Raises
-    ------
-    XLRDError
-        For error in case the 'sheet' input does not match with an actual
-        sheet in the excel file from path.
-
     Returns
     -------
     pandas.DataFrame
         the EB data as a pandas.DataFrame with additional columns describing
         the source and context of the EB data
 
+    Raises
+    ------
+    XLRDError
+        For error in case the 'sheet' input does not match with an actual
+        sheet in the excel file from path.
+
+    
     """
     
     if format == 'xls':

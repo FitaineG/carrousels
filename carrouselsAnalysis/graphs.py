@@ -28,6 +28,35 @@ def trace_precision_station(data, cols=cols_precision_station,
                                     xlim=(1,-1), trace_moy=True,
                                     category=cols_precision_station[2],
                                     sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_precision_station)
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (8)
+    10) :
+        
+    xlim :
+         (Default value = (1)
+    -1) :
+        
+    trace_moy :
+         (Default value = True)
+    category :
+         (Default value = cols_precision_station[2])
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
 
     fig = plt.figure(figsize=figsize)
 
@@ -64,6 +93,35 @@ def trace_dispersion_station(data, cols=cols_precision_station,
                              color=None, figsize=(8,10), xlim=(0.5,0),
                              trace_moy=True, category=cols_precision_station[2],
                              sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_precision_station)
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (8)
+    10) :
+        
+    xlim :
+         (Default value = (0.5)
+    0) :
+        
+    trace_moy :
+         (Default value = True)
+    category :
+         (Default value = cols_precision_station[2])
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
 
     fig = plt.figure(figsize=figsize)
 
@@ -99,6 +157,35 @@ def trace_precision_train(data, cols=cols_precision_train,
                                     xlim=(1,-1), trace_moy=True,
                                     category=None,
                                     sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_precision_train)
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (8)
+    10) :
+        
+    xlim :
+         (Default value = (1)
+    -1) :
+        
+    trace_moy :
+         (Default value = True)
+    category :
+         (Default value = None)
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
 
     fig = plt.figure(figsize=figsize)
 
@@ -135,6 +222,35 @@ def trace_dispersion_train(data, cols=cols_precision_train,
                              color=None, figsize=(8,10), xlim=(0.5,0),
                              trace_moy=True, category=None,
                              sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_precision_train)
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (8)
+    10) :
+        
+    xlim :
+         (Default value = (0.5)
+    0) :
+        
+    trace_moy :
+         (Default value = True)
+    category :
+         (Default value = None)
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
 
     fig = plt.figure(figsize=figsize)
 
