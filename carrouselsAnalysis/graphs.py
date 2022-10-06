@@ -22,6 +22,11 @@ cols_precision_station = ['StopStation', 'DistanceSSP', 'TypeMouvement']
 
 cols_precision_train = ['Train', 'DistanceSSP']
 
+cols_tps_parcours = ['Mouvement', 'Duree', 'TypeMouvement']
+
+cols_EB_by_time = ['Date_Time', 'EB_COUNT']
+
+cols_EB_by_KP = ['Start_track_id', 'Start_abscissa']
 
 def trace_precision_station(data, cols=cols_precision_station,
                                     color=None, figsize=(8,10),
@@ -35,27 +40,28 @@ def trace_precision_station(data, cols=cols_precision_station,
     data :
         
     cols :
-         (Default value = cols_precision_station)
+        (Default value = cols_precision_station)
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (8)
+        (Default value = (8)
     10) :
         
     xlim :
-         (Default value = (1)
+        (Default value = (1)
     -1) :
         
     trace_moy :
-         (Default value = True)
+        (Default value = True)
     category :
-         (Default value = cols_precision_station[2])
+        (Default value = cols_precision_station[2])
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -100,27 +106,28 @@ def trace_dispersion_station(data, cols=cols_precision_station,
     data :
         
     cols :
-         (Default value = cols_precision_station)
+        (Default value = cols_precision_station)
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (8)
+        (Default value = (8)
     10) :
         
     xlim :
-         (Default value = (0.5)
+        (Default value = (0.5)
     0) :
         
     trace_moy :
-         (Default value = True)
+        (Default value = True)
     category :
-         (Default value = cols_precision_station[2])
+        (Default value = cols_precision_station[2])
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -164,27 +171,28 @@ def trace_precision_train(data, cols=cols_precision_train,
     data :
         
     cols :
-         (Default value = cols_precision_train)
+        (Default value = cols_precision_train)
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (8)
+        (Default value = (8)
     10) :
         
     xlim :
-         (Default value = (1)
+        (Default value = (1)
     -1) :
         
     trace_moy :
-         (Default value = True)
+        (Default value = True)
     category :
-         (Default value = None)
+        (Default value = None)
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -229,27 +237,28 @@ def trace_dispersion_train(data, cols=cols_precision_train,
     data :
         
     cols :
-         (Default value = cols_precision_train)
+        (Default value = cols_precision_train)
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (8)
+        (Default value = (8)
     10) :
         
     xlim :
-         (Default value = (0.5)
+        (Default value = (0.5)
     0) :
         
     trace_moy :
-         (Default value = True)
+        (Default value = True)
     category :
-         (Default value = None)
+        (Default value = None)
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -280,6 +289,177 @@ def trace_dispersion_train(data, cols=cols_precision_train,
     plt.legend()
     return plt.show()
 
+def trace_EB_by_KP(data, cols=cols_EB_by_KP, bins=100,
+                   color='tab:blue', figsize=(20,8), ylim=None):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_EB_by_KP)
+    bins :
+         (Default value = 100)
+    color :
+         (Default value = 'tab:blue')
+    figsize :
+         (Default value = (20)
+    8) :
+        
+    ylim :
+         (Default value = None)
+
+    Returns
+    -------
+
+    """
+
+    fig = plt.figure(figsize=figsize)
+
+    plt.subplot(2,1,1)
+    plt.hist(data.loc[data[cols[0]] == 3, cols[1]], bins=bins, color=color)
+    plt.xticks()
+    plt.title("Nombre d'EB par KP", size = 16)
+    plt.gca().invert_xaxis()
+    plt.ylim(ylim)
+    plt.ylabel("Nombre d'EB")
+    plt.subplot(2,1,2)
+    plt.hist(data.loc[data[cols[0]] == 2, cols[1]], bins=bins, color=color)
+    plt.xticks()
+    plt.ylim(ylim)
+    plt.gca().invert_xaxis()
+    plt.ylabel("Nombre d'EB")
+    plt.xlabel("KP")
+    plt.tight_layout()
+    return plt.show()
+
+def trace_EB_by_time(data, cols=cols_EB_by_time, bins='10T',
+                      color='tab:blue', figsize=(20,4), ylim=None):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_EB_by_time)
+    bins :
+         (Default value = '10T')
+    color :
+         (Default value = 'tab:blue')
+    figsize :
+         (Default value = (20)
+    4) :
+        
+    ylim :
+         (Default value = None)
+
+    Returns
+    -------
+
+    """
+
+    data['Time'] = pd.to_datetime(data[cols[0]])
+    data_by_time = data.set_index('Time').sort_index()
+    data_by_time = data_by_time.resample(bins)[cols[1]].count()
+
+    fig = plt.figure(figsize=figsize)
+    sns.barplot(x=data_by_time.index, y=data_by_time.values, color=color)
+    plt.xticks(rotation=90)
+    plt.title("Nombre d'EB par période de temps", size = 16)
+    plt.ylim(ylim)
+    plt.ylabel("Nombre d'EB")
+    plt.xlabel("Temps")
+    return plt.show()
+
+def trace_tps_parcours(data, cols=cols_tps_parcours,
+                       category=cols_tps_parcours[2], color=None,
+                       figsize=(16,5), ylim=None, sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_tps_parcours)
+    category :
+         (Default value = cols_tps_parcours[2])
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (16)
+    5) :
+        
+    ylim :
+         (Default value = None)
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
+    
+    fig = plt.figure(figsize=figsize)
+    
+    if sort:
+        ordre = data[cols[0]].sort_values().unique()
+    else:
+        ordre = None
+    
+    if category:
+        color= None
+    
+    sns.barplot(data=data, x=cols[0], y=cols[1], hue=category, color=color,
+                order=ordre, dodge=False, ci=False)
+    plt.title("Temps de parcours moyen par mouvement", size=16)
+    plt.xticks(rotation=90)
+    return plt.show()
+    
+def trace_disp_tps_parcours(data, cols=cols_tps_parcours,
+                            category=cols_tps_parcours[2],
+                      color=None, figsize=(16,5), ylim=None, sort=True):
+    """
+
+    Parameters
+    ----------
+    data :
+        
+    cols :
+         (Default value = cols_tps_parcours)
+    category :
+         (Default value = cols_tps_parcours[2])
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (16)
+    5) :
+        
+    ylim :
+         (Default value = None)
+    sort :
+         (Default value = True)
+
+    Returns
+    -------
+
+    """
+    
+    fig = plt.figure(figsize=figsize)
+    
+    if sort:
+        ordre = data[cols[0]].sort_values().unique()
+    else:
+        ordre = None
+    
+    sns.boxplot(data=data, x=cols[0], y=cols[1], hue=category, color=color,
+                order=ordre, dodge=False)
+    plt.title("Dispersion des temps de parcours par mouvement", size=16)
+    plt.ylim(ylim)
+    plt.xticks(rotation=90)
+    return plt.show()
 
 """
 initial code developped by Tiphaine GRAILLAT for ALSTOM
