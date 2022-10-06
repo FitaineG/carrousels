@@ -32,35 +32,40 @@ def trace_precision_station(data, cols=cols_precision_station,
                                     color=None, figsize=(8,10),
                                     xlim=(1,-1), trace_moy=True,
                                     category=cols_precision_station[2],
-                                    sort=True):
-    """
+                                    sort=True, **kwargs):
+    """plots a horizontal barplot graph showing the mean stopping accuracy by
+    station
 
     Parameters
     ----------
-    data :
-        
-    cols :
+    data : pd.Dataframe
+        dataframe containing the data to plot
+    cols : list of strings, optional
+        list of labels used to plot on x, y axis and by category.
         (Default value = cols_precision_station)
-    color :
+    color : string, optional
+        color to be used to plot. Overriden to False if category is defined
         (Default value = None)
-    figsize :
-        (Default value = (8)
-    10) :
-        
-    xlim :
-        (Default value = (1)
-    -1) :
-        
-    trace_moy :
+    figsize : tuple of int or float, optional
+        defines the size of plot
+        (Default value = (8,10)) :
+    xlim : tuple of int or float
+        defines the limits for x axis
+        (Default value = (1,-1)) :
+    trace_moy : bool, optional
+        defines whether or not to plot a vertical red dotted line showing the
+        overall stopping accuracy.
         (Default value = True)
-    category :
+    category : string, optional
+        label to be used for visualizing category of plotted data
         (Default value = cols_precision_station[2])
-    sort :
+    sort : bool, optional
+        if True, stations on y axis are sorted alphabetically
         (Default value = True)
 
     Returns
     -------
-
+    plots a barplot graph
     
     """
 
@@ -77,13 +82,29 @@ def trace_precision_station(data, cols=cols_precision_station,
     else:
         ordre=None
 
-    # ci parameter set to None disables the plotting of confidence intervals
+
+#    if 'orient' in kwargs:
+#        orientation = kwargs['orient']
+#    else:
+    orientation = kwargs.pop('orient', 'h')
+
+#    if 'ci' in kwargs:
+#        ci = kwargs['ci']
+#    else:
+    ci = kwargs.pop('ci', False)
+
+#    if 'dodge' in kwargs:
+#        dodge = kwargs['dodge']
+#    else:
+    dodge = kwargs.pop('dodge', False)
+        
+    # ci"""" parameter set to None disables the plotting of confidence intervals
     # dodge parameter set to False prevents having a bar for each 'y' value
     # and for each 'hue' category: here the 'hue' parameter is just used to
     # color code each bar depending on category of hue.
     sns.barplot(data=data, y=cols[0], x=cols[1],
-                color=color, orient='h', hue=category, ci=None, dodge=False,
-                order=ordre)
+                color=color, orient=orientation, hue=category, ci=ci,
+                dodge=dodge, order=ordre, **kwargs)
     plt.title(f"Précision moyenne d'arrêt par station", size=16)
     plt.xlim(xlim[0],xlim[1])
     if trace_moy:
