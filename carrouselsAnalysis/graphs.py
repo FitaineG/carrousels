@@ -39,7 +39,7 @@ def trace_precision_station(data, cols=cols_precision_station,
     Parameters
     ----------
     data : pd.Dataframe
-        dataframe containing the data to plot
+
     cols : list of strings, optional
         list of labels used to plot on x, y axis and by category.
         (Default value = cols_precision_station)
@@ -48,10 +48,10 @@ def trace_precision_station(data, cols=cols_precision_station,
         (Default value = None)
     figsize : tuple of int or float, optional
         defines the size of plot
-        (Default value = (8,10)) :
+        (Default value = (8,10))
     xlim : tuple of int or float
         defines the limits for x axis
-        (Default value = (1,-1)) :
+        (Default value = (1,-1))
     trace_moy : bool, optional
         defines whether or not to plot a vertical red dotted line showing the
         overall stopping accuracy.
@@ -62,10 +62,14 @@ def trace_precision_station(data, cols=cols_precision_station,
     sort : bool, optional
         if True, stations on y axis are sorted alphabetically
         (Default value = True)
+    **kwargs :
+
 
     Returns
     -------
     plots a barplot graph
+        
+
     
     """
 
@@ -125,30 +129,25 @@ def trace_dispersion_station(data, cols=cols_precision_station,
     Parameters
     ----------
     data :
-        
+
     cols :
-        (Default value = cols_precision_station)
+         (Default value = cols_precision_station)
     color :
-        (Default value = None)
+         (Default value = None)
     figsize :
-        (Default value = (8)
-    10) :
-        
+         (Default value = (8,10))
     xlim :
-        (Default value = (0.5)
-    0) :
-        
+         (Default value = (0.5,0))
     trace_moy :
-        (Default value = True)
+         (Default value = True)
     category :
-        (Default value = cols_precision_station[2])
+         (Default value = cols_precision_station[2])
     sort :
-        (Default value = True)
+         (Default value = True)
 
     Returns
     -------
 
-    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -190,19 +189,15 @@ def trace_precision_train(data, cols=cols_precision_train,
     Parameters
     ----------
     data :
-        
+
     cols :
         (Default value = cols_precision_train)
     color :
         (Default value = None)
     figsize :
-        (Default value = (8)
-    10) :
-        
+        (Default value = (8,10))
     xlim :
-        (Default value = (1)
-    -1) :
-        
+         (Default value = (1,-1))
     trace_moy :
         (Default value = True)
     category :
@@ -256,25 +251,23 @@ def trace_dispersion_train(data, cols=cols_precision_train,
     Parameters
     ----------
     data :
-        
+
     cols :
         (Default value = cols_precision_train)
-    color :
-        (Default value = None)
-    figsize :
-        (Default value = (8)
-    10) :
-        
     xlim :
-        (Default value = (0.5)
-    0) :
-        
+        (Default value = (0.5,0))
+    0) (unused?) :
+
     trace_moy :
         (Default value = True)
     category :
         (Default value = None)
     sort :
         (Default value = True)
+    color :
+         (Default value = None)
+    figsize :
+         (Default value = (8,10))
 
     Returns
     -------
@@ -317,23 +310,22 @@ def trace_EB_by_KP(data, cols=cols_EB_by_KP, bins=100,
     Parameters
     ----------
     data :
-        
+
     cols :
-         (Default value = cols_EB_by_KP)
+        (Default value = cols_EB_by_KP)
     bins :
-         (Default value = 100)
+        (Default value = 100)
     color :
          (Default value = 'tab:blue')
     figsize :
-         (Default value = (20)
-    8) :
-        
+         (Default value = (20,8))
     ylim :
          (Default value = None)
 
     Returns
     -------
 
+    
     """
 
     fig = plt.figure(figsize=figsize)
@@ -362,23 +354,24 @@ def trace_EB_by_time(data, cols=cols_EB_by_time, bins='10T',
     Parameters
     ----------
     data :
-        
+
     cols :
-         (Default value = cols_EB_by_time)
+        (Default value = cols_EB_by_time)
     bins :
-         (Default value = '10T')
+        (Default value = '10T')
     color :
-         (Default value = 'tab:blue')
+        (Default value = 'tab:blue')
     figsize :
-         (Default value = (20)
-    4) :
-        
+        (Default value = (20,4))
+    4) (unused?) :
+
     ylim :
-         (Default value = None)
+        (Default value = None)
 
     Returns
     -------
 
+    
     """
 
     data['Time'] = pd.to_datetime(data[cols[0]])
@@ -402,25 +395,24 @@ def trace_tps_parcours(data, cols=cols_tps_parcours,
     Parameters
     ----------
     data :
-        
+
     cols :
-         (Default value = cols_tps_parcours)
+        (Default value = cols_tps_parcours)
     category :
-         (Default value = cols_tps_parcours[2])
+        (Default value = cols_tps_parcours[2])
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (16)
-    5) :
-        
+        (Default value = (16,5))
     ylim :
-         (Default value = None)
+        (Default value = None)
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
     
     fig = plt.figure(figsize=figsize)
@@ -447,25 +439,24 @@ def trace_disp_tps_parcours(data, cols=cols_tps_parcours,
     Parameters
     ----------
     data :
-        
+
     cols :
-         (Default value = cols_tps_parcours)
+        (Default value = cols_tps_parcours)
     category :
-         (Default value = cols_tps_parcours[2])
+        (Default value = cols_tps_parcours[2])
     color :
-         (Default value = None)
+        (Default value = None)
     figsize :
-         (Default value = (16)
-    5) :
-        
+         (Default value = (16,5))
     ylim :
-         (Default value = None)
+        (Default value = None)
     sort :
-         (Default value = True)
+        (Default value = True)
 
     Returns
     -------
 
+    
     """
     
     fig = plt.figure(figsize=figsize)
