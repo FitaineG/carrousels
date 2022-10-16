@@ -31,11 +31,11 @@ cols_movement_drop=['Id_mvt', 'Date_Start', 'Abscisse_T_Start',
                 'DistanceToSSP_avg__10cycles_avant_vitesse_nulle']
 
 
-cols_precision_station = ['StopStation', 'DistanceSSP', 'TypeMouvement']
+cols_precision_station = ['StopStation', 'DistanceSSP', 'TypeMovement']
 
 cols_precision_train = ['Train', 'DistanceSSP']
 
-cols_tps_parcours = ['Mouvement', 'Duree', 'TypeMouvement']
+cols_tps_parcours = ['Movement', 'Duree', 'TypeMovement']
 
 cols_EB_by_time = ['Date_Time', 'EB_COUNT']
 
@@ -64,6 +64,8 @@ class Track:
             if terminus:
                 self.terminus = terminus
 
+        return print('Track créée')
+
 
 class Carrousel:
 
@@ -73,6 +75,7 @@ class Carrousel:
         self.source = source
         self.context = context
         self.build = build
+        return print('Carrousel créé')
 
     def get_movement(self, path=None, format='xls', sheet=0,
                      dropna=True, rename_cols=movement_cols_name,
@@ -205,12 +208,12 @@ class Carrousel:
     def __determine_type_movement(self, mouvement):
         # force mouvement sous forme de string
         mouvement = str(mouvement)
-        if mouvement in self.track['intersectors']:
+        if mouvement in self.track.intersectors:
             return 'intersecteur'
-        elif (mouvement[-4:] in self.track['terminus']) or (
-              mouvement[-3:] in self.track['terminus']):
+        elif (mouvement[-4:] in self.track.terminus) or (
+              mouvement[-3:] in self.track.terminus):
             return 'terminus'
-        elif (mouvement in self.track['turnbacks']):
+        elif (mouvement in self.track.turnbacks):
             return 'retournement'
         else:
             return 'standard'
@@ -324,7 +327,7 @@ class Carrousel:
 
 
     def trace_precision_station(self, cols=cols_precision_station,
-                                color=None, figsize=(8,10), xlim=(1,-1),
+                                color='tab:blue', figsize=(8,10), xlim=(1,-1),
                                 trace_moy=True,
                                 category=cols_precision_station[2],
                                 sort=True, **kwargs):
@@ -377,7 +380,7 @@ class Carrousel:
 
         # If sort is True, the order used is alphabetical order of stop stations
         if sort:
-            ordre=data[cols[0]].sort_values().unique()
+            ordre=self.movements[cols[0]].sort_values().unique()
         else:
             ordre=None
 
@@ -399,15 +402,15 @@ class Carrousel:
         plt.xlim(xlim[0],xlim[1])
         if trace_moy:
         # let plot the mean for distance to SSP across all data set
-            plt.axvline(data[cols[1]].mean(), color='r', ls='--',
-                label=f"Moyenne = {data[cols[1]].mean():.2f}")
+            plt.axvline(self.movements[cols[1]].mean(), color='r', ls='--',
+                label=f"Moyenne = {self.movements[cols[1]].mean():.2f}")
         plt.legend()
         plt.xlabel('Distance au SSP')
         plt.ylabel("Station d'arrivée")
         return plt.show()
 
     def trace_dispersion_station(self, cols=cols_precision_station,
-                                 color=None, figsize=(8,10), xlim=(1,-1),
+                                 color='tab:blue', figsize=(8,10), xlim=(1,-1),
                                  trace_moy=True,
                                  category=cols_precision_station[2],
                                  sort=True, **kwargs):
@@ -446,7 +449,7 @@ class Carrousel:
 
         # If sort is True, the order used is alphabetical order of stop stations
         if sort:
-            ordre=data[cols[0]].sort_values().unique()
+            ordre=self.movements[cols[0]].sort_values().unique()
         else:
             ordre=None
 
@@ -465,13 +468,13 @@ class Carrousel:
         plt.ylabel("Station d'arrivée")
         plt.xlim(xlim[0],xlim[1])    
         if trace_moy:
-            plt.axvline(data[cols[1]].mean(), color='r', ls='--',
-                label=f"Moyenne = {data[cols[1]].mean():.2f}")
+            plt.axvline(self.movements[cols[1]].mean(), color='r', ls='--',
+                label=f"Moyenne = {self.movements[cols[1]].mean():.2f}")
         plt.legend()
         return plt.show()
 
 
-    def trace_precision_train(self, cols=cols_precision_train, color=None,
+    def trace_precision_train(self, cols=cols_precision_train, color='tab:blue',
                               figsize=(8,10), xlim=(1,-1), trace_moy=True,
                               category=None, sort=True, **kwargs):
         """
@@ -510,7 +513,7 @@ class Carrousel:
 
         # If sort is True, the order used is increasing order of train number
         if sort:
-            ordre=data[cols[0]].sort_values().unique()
+            ordre=self.movements[cols[0]].sort_values().unique()
         else:
             ordre=None
 
@@ -525,7 +528,7 @@ class Carrousel:
         # dodge parameter set to False prevents having a bar for each 'y' value
         # and for each 'hue' category: here the 'hue' parameter is just used to
         # color code each bar depending on category of hue.
-        sns.barplot(data=data, y=cols[0], x=cols[1],
+        sns.barplot(data=self.movements, y=cols[0], x=cols[1],
                     color=color, orient=orientation, hue=category, ci=ci,
                     dodge=dodge, order=ordre, **kwargs)
         
@@ -533,15 +536,15 @@ class Carrousel:
         plt.xlim(xlim[0],xlim[1])
         if trace_moy:
         # let plot the mean for distance to SSP across all data set
-            plt.axvline(data[cols[1]].mean(), color='r', ls='--',
-                label=f"Moyenne = {data[cols[1]].mean():.2f}")
+            plt.axvline(self.movements[cols[1]].mean(), color='r', ls='--',
+                label=f"Moyenne = {self.movements[cols[1]].mean():.2f}")
         plt.legend()
         plt.xlabel('Distance au SSP')
         plt.ylabel("Numéro du train")
         return plt.show()
 
     def trace_dispersion_train(self, cols=cols_precision_train,
-                               color=None, figsize=(8,10), xlim=(1,-1),
+                               color='tab:blue', figsize=(8,10), xlim=(1,-1),
                                trace_moy=True, category=None, sort=True,
                                **kwargs):
         """
@@ -582,7 +585,7 @@ class Carrousel:
 
         # If sort=True, the order used is the increasing order of train number
         if sort:
-            ordre=data[cols[0]].sort_values().unique()
+            ordre=self.movements[cols[0]].sort_values().unique()
         else:
             ordre=None
 
@@ -601,8 +604,8 @@ class Carrousel:
         plt.ylabel("Numéro du train")
         plt.xlim(xlim[0],xlim[1])    
         if trace_moy:
-            plt.axvline(data[cols[1]].mean(), color='r', ls='--',
-                label=f"Moyenne = {data[cols[1]].mean():.2f}")
+            plt.axvline(self.movements[cols[1]].mean(), color='r', ls='--',
+                label=f"Moyenne = {self.movements[cols[1]].mean():.2f}")
         plt.legend()
         return plt.show()
 
@@ -632,7 +635,7 @@ class Carrousel:
         """
 
         fig = plt.figure(figsize=figsize)
-
+        plt.title("Nombre d'EB par KP", size = 16)
         if not self.track.tracklist:
             message = """Pour tracer ce graphe, le carrousel doit être associé à
             une track contenant une liste de voies"""
@@ -641,16 +644,15 @@ class Carrousel:
         nb_graphs = len(self.track.tracklist)
         for i, t in enumerate(self.track.tracklist):
             # creating as many subplots as the number of tracks declared
-            plt.subplot(nb_graphs,1,i)
+            plt.subplot(nb_graphs,1,i+1)
             plt.hist(self.emergencyBrakings.loc[
                 self.emergencyBrakings[cols[0]] == t[1], cols[1]],
                      bins=bins, color=color, **kwargs)
             plt.xticks()
             plt.gca().invert_xaxis()
             plt.ylim(0,ymax)
-            plt.ylabel(f"Nombre d'EB pour la voie {t[0]}")
-        plt.title("Nombre d'EB par KP", size = 16)
-        plt.xlabel("KP")
+            plt.ylabel(f"{t[0]}")
+        plt.xlabel("Points kilométriques")
         plt.tight_layout()
         return plt.show()
 
@@ -698,8 +700,8 @@ class Carrousel:
         return plt.show()
 
     def trace_tps_parcours(self, cols=cols_tps_parcours,
-                           category=cols_tps_parcours[2], color=None,
-                           figsize=(16,5), ylim=None, sort=True):
+                           category=cols_tps_parcours[2], color='tab:blue',
+                           figsize=(16,5), ylim=None, sort=True, **kwargs):
         """
 
         Parameters
@@ -728,7 +730,7 @@ class Carrousel:
         fig = plt.figure(figsize=figsize)
 
         if sort:
-            ordre = data[cols[0]].sort_values().unique()
+            ordre = self.movements[cols[0]].sort_values().unique()
         else:
             ordre = None
 
@@ -746,9 +748,9 @@ class Carrousel:
         plt.xticks(rotation=90)
         return plt.show()
 
-    def trace_disp_tps_parcours(self.movements, cols=cols_tps_parcours,
-                                category=cols_tps_parcours[2], color=None,
-                                figsize=(16,5), ylim=None, sort=True):
+    def trace_disp_tps_parcours(self, cols=cols_tps_parcours,
+                                category=cols_tps_parcours[2], color='tab:blue',
+                                figsize=(16,5), ylim=None, sort=True, **kwargs):
         """
 
         Parameters
@@ -777,9 +779,12 @@ class Carrousel:
         fig = plt.figure(figsize=figsize)
 
         if sort:
-            ordre = data[cols[0]].sort_values().unique()
+            ordre = self.movements[cols[0]].sort_values().unique()
         else:
             ordre = None
+
+        if category:
+            color= None
 
         dodge = kwargs.pop('dodge', False)
             
