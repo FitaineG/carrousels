@@ -9,26 +9,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from xlrd import XLRDError
-
-cols_EB_drop = ['id', 'EB_TRAIN_ARRET', 'Abscisse_Temps', 'EB_CAUSE',
-                'Distance_from_train_front_end_to_stop_wished',
-                'Distance_from_train_front_end_to_stop_proposed',
-                'Message_counter_OMAP', 'LOG_OMAP']
-
-movement_cols_name = {'Control_software': 'SoftwareVersion',
-                'NumTrain': 'Train',
-                'Stop_Station': 'StopStation',
-                'Distance_from_train_front_end_to_stop_wished': 'DistanceSSP',
-                'Duree_MVT': 'Duree'}
-
-cols_movement_drop=['Id_mvt', 'Date_Start', 'Abscisse_T_Start',
-                'Abscisse_T_Stop',
-                'Distance_from_train_front_end_to_stop_proposed',
-                'LOG_OMAP', 'Message_counter_OMAP', 'Row_Id_start',
-                'Row_Id_stop', 'Row_Id_max_kph', 'Row_Id_start_after_stop',
-                'RSD_1_Vital_opening_command',
-                'DistanceToSSP', 'DistanceToSSP__1cycle_avant_vitesse_nulle',
-                'DistanceToSSP_avg__10cycles_avant_vitesse_nulle']
+from carrouselsAnalysis.dataFormat import carrouselFormat
 
 
 cols_precision_station = ['StopStation', 'DistanceSSP', 'TypeMovement']
@@ -37,9 +18,9 @@ cols_precision_train = ['Train', 'DistanceSSP']
 
 cols_tps_parcours = ['Movement', 'Duree', 'TypeMovement']
 
-cols_EB_by_time = ['Date_Time', 'EB_COUNT']
+cols_EB_by_time = ['Date', 'EBCause']
 
-cols_EB_by_KP = ['Start_track_id', 'Start_abscissa']
+cols_EB_by_KP = ['EB_trackID', 'EB_KP']
 
 
 class Track:
@@ -77,9 +58,9 @@ class Carrousel:
         self.build = build
         return print('Carrousel créé')
 
-    def get_movement(self, path=None, format='xls', sheet=0,
-                     dropna=True, rename_cols=movement_cols_name,
-                     drop_cols=cols_movement_drop):
+    def get_movement(self, path=None, fileFormat='xls', sheet=0,
+                     dropna=True, dataFormat='MG', rename_cols=None,
+                     drop_cols=None):
         """import movement data from path into a pandas.DataFrame adding source,
         context and version as new columns to uniquely identify imported data
         and label graphs.
@@ -142,7 +123,7 @@ class Carrousel:
         if not path:
             path = self.dataPath
 
-        if format == 'xls':
+        if fileFormat == 'xls':
             try:
                 data = pd.read_excel(path, sheet_name=sheet)
             except XLRDError:
@@ -150,35 +131,17 @@ class Carrousel:
                            "n'existe pas dans le fichier excel")
                 print(message)
                 raise XLRDError(message)
-        elif format == 'csv':
+        elif fileFormat == 'csv':
             if sheet != 0:
                 print(f"'{sheet}' sheet not taken into account for 'csv' file")
             data = pd.read_csv(path)
         else:
-            print(f"'{format}' files are not a valid data format")
+            print(f"'{fileFormat}' files are not a valid data format")
             return
 
-        # Define new column for mvt from mvt start to mvt stop
-        data['Movement'] = (data['Start_Station'].str[:-2] + '-' +
-                             data['Stop_Station'].str[:-2])
-        # Define new columns for source, and context
-        data['Source'] = self.source
-        data['Context'] = self.context
-        if self.build:
-        # use concatenation of 'build', 'source' and 'context' to uniquely
-        # identify the data
-            data['Version'] = (self.build + '_' + self.source + '_'
-                              + self.context)
-        else:
-        # use the 'Control_software' of data concatenated with 'source'
-        # and 'context' to uniquely identify the data
-            data['Version'] = 'v' + data['Control_software'].str.replace(
-                " ","").str.replace("_1_", "b").str[1:] + (
-                    '_' + self.source + '_' + self.context)
-        # determine type of movement
-        if self.track:
-            data['TypeMovement'] = data['Movement'].apply(
-            lambda x: self.__determine_type_movement(x))
+        if dataFormat:
+            drop_cols = carrouselFormat[dataFormat]['movement_cols_drop']
+            rename_cols  = carrouselFormat[dataFormat]['movement_cols_name']
 
         if drop_cols:
         # suppression des colonnes
@@ -191,8 +154,32 @@ class Carrousel:
         if dropna:
         # Suppression des valeurs manquantes (NaN)
             data = data.dropna()
+        
+        # Define new column for mvt from mvt start to mvt stop
+        data['Movement'] = (data['StartStation'].str[:-2] + '-' +
+                             data['StopStation'].str[:-2])
+        # Define new columns for source, and context
+        data['Source'] = self.source
+        data['Context'] = self.context
+        if self.build:
+        # use concatenation of 'build', 'source' and 'context' to uniquely
+        # identify the data
+            data['Version'] = (self.build + '_' + self.source + '_'
+                              + self.context)
+        else:
+        # use the 'Control_software' of data concatenated with 'source'
+        # and 'context' to uniquely identify the data
+            data['Version'] = 'v' + data['SoftwareVersion'].str.replace(
+                " ","").str.replace("_1_", "b").str[1:] + (
+                    '_' + self.source + '_' + self.context)
+        # determine type of movement
+        if self.track:
+            data['TypeMovement'] = data['Movement'].apply(
+            lambda x: self.__determine_type_movement(x))
 
-        data['CorrectDocking'] = data['Train_correctly_docked'] != 0
+
+
+        data['CorrectDocking'] = data['TrainCorrectlyDocked'] != 0
 
         print(f"{data.shape[0]} mouvements importés")
         self.movements = data.reset_index()
@@ -220,8 +207,9 @@ class Carrousel:
 
 
 
-    def get_EB(self, path=None, format='xls', sheet=2, dropna=True,
-               moving=True, drop_cols=cols_EB_drop):
+    def get_EB(self, path=None, fileFormat='xls', sheet=2, dropna=True,
+               moving=True, dataFormat='MG', drop_cols=None, filter_col=None,
+               rename_cols=None):
         """import EB data from path into a pandas.DataFrame adding source,
         context and version as new columns to uniquely identify imported data
         and label graphs.
@@ -277,7 +265,7 @@ class Carrousel:
         if not path:
             path = self.dataPath
 
-        if format == 'xls':
+        if fileFormat == 'xls':
             try:
                 data = pd.read_excel(path, sheet_name=sheet)
             except XLRDError:
@@ -285,16 +273,29 @@ class Carrousel:
                            "n'existe pas dans le fichier excel")
                 print(message)
                 raise XLRDError(message)
-        elif format == 'csv':
+        elif fileFormat == 'csv':
             if sheet != 0:
                 print(f"'{sheet}' sheet not taken into account for 'csv' file")
             data = pd.read_csv(path)
         else:
-            print(f"'{format}' files are not a valid data format")
+            print(f"'{fileFormat}' files are not a valid data format")
             return
+
+        if dataFormat:
+            drop_cols = carrouselFormat[dataFormat]['EB_cols_drop']
+            rename_cols  = carrouselFormat[dataFormat]['EB_cols_name']
+            filter_col = carrouselFormat[dataFormat]['EB_filter']
 
         if drop_cols:
             data = data.drop(columns=drop_cols)
+
+        if filter_col:
+            data = data[data[filter_col].isnull() == False]
+            data = data.drop(columns=filter_col)
+
+        if rename_cols:
+        # renaming des colonnes
+            data = data.rename(columns=rename_cols)
 
         if dropna:
             # Suppression des valeurs manquantes (NaN)
@@ -314,7 +315,7 @@ class Carrousel:
         else:
         # use the 'Control_software' of data concatenated with 'source'
         # and 'context' to uniquely identify the data
-            data['Version'] = 'v' + data['Control_software'].str.replace(
+            data['Version'] = 'v' + data['SoftwareVersion'].str.replace(
                 " ","").str.replace("_1_", "b").str[1:] + (
                     '_' + self.source + '_' + self.context)
         if moving:
