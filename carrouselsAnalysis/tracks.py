@@ -11,7 +11,7 @@ Ceci est un module python qui contient la définition des tracks de reference.
 
 # définir la liste des voies principales du carrousel sous la forme d'un
 # tuple ('nom', trackid)
-listeVoies = [('V1', 3), ('V2',2)]
+listeVoies = [('V1', 3, 13000), ('V2', 2, 13000)]
 # lister les mouvements nominaux, par voie déclarée ci-dessus - key = nomtrack
 serviceCommercial = {'V1': ['4C1-CS1', 'CS1-TRI1', 'TRI1-HDV1', 'HDV1-PDB1',
                             'PDB1-LEZ1', 'LEZ1-HEL1', 'HEL1-MAR1', 'MAR1-FIV1',
