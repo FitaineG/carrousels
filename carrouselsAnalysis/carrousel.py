@@ -982,7 +982,8 @@ class Carrousel:
         return plt.show()
 
     def trace_tps_parcours(self, x='Movement', y='Duree',
-                        category='TypeMovement', color='tab:blue',
+                        category='TypeMovement', nominalService=True,
+                        color='tab:blue',
                         figsize=(16,5), sort=True, function='mean',
                         **kwargs):
         """
@@ -1053,7 +1054,12 @@ class Carrousel:
         elif function == 'max':
             estimator = np.max
 
-        sns.barplot(data=self.movements, x=x, y=y, hue=category,
+        if nominalService:
+            data=self.nominalMovements
+        else:
+            data=self.movements
+        
+        sns.barplot(data=data, x=x, y=y, hue=category,
                     color=color, order=ordre, dodge=dodge, ci=ci,
                     estimator=estimator, **kwargs)
 
@@ -1062,7 +1068,8 @@ class Carrousel:
         return plt.show()
 
     def trace_disp_tps_parcours(self, x='Movement', y='Duree',
-                        category='TypeMovement', color='tab:blue',
+                        category='TypeMovement', nominalService=True,
+                        color='tab:blue',
                         figsize=(16,5), ylim=None, sort=True,
                         **kwargs):
         """
@@ -1114,6 +1121,11 @@ class Carrousel:
             color= None
 
         dodge = kwargs.pop('dodge', False)
+        
+        if nominalService:
+            data=self.nominalMovements
+        else:
+            data=self.movements
             
         sns.boxplot(data=self.movements, x=x, y=y, hue=category,
                     color=color, order=ordre, dodge=dodge, **kwargs)
@@ -1171,7 +1183,7 @@ class Carrousel:
             
         if labels == False:
             labelList=None
-        elif data.index[0] == True:
+        elif pieData.index[0] == True:
             labelList=['Docking: OK', 'Docking: KO']
         else:
             labelList=['Docking: KO', 'Docking: OK']
