@@ -1277,7 +1277,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': False,
-            'title': "Répartition statistique des arrêts",
+            'title': "Répartition statistique des arrêts en station",
             'xLabel': "Distance au SSP (m)"}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
@@ -1337,7 +1337,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
-            'title': "Répartition statistique des arrêts",
+            'title': "Répartition statistique des arrêts en station",
             'xLabel': "Distance au SSP (m)"}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
@@ -1440,7 +1440,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
-            'title': "Répartition statistique des arrêts",
+            'title': "Répartition statistique des arrêts en station",
             'xLabel': "Distance au SSP (m)"}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
