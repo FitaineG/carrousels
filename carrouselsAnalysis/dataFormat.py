@@ -61,7 +61,8 @@ MG_format = {
                 'Control_acceleration_avg_2_1_KPH',
                 'Nb_cycle_coasting_10_1_KPH',
                 'Nb_cycle_motoring_10_1_KPH',
-                'Nb_JOG']
+                'Nb_JOG'],
+    'stationRegex': '^(SA_)?(?P<station>.*)(?P<pos>_[01])(.*)?'
     }
 
 # ************
@@ -106,7 +107,8 @@ Fabisis_format = {
                 'PSD_lower_boundary', 'PSD_upper_boundary',
                 'Total_distance_done', 'Nb_cycle_NVFT_accel_FD_inf_-1.6',
                 'Control_acceleration_avg_2_1_KPH',
-                'Nb_cycle_coasting_10_1_KPH', 'Nb_cycle_motoring_10_1_KPH']
+                'Nb_cycle_coasting_10_1_KPH', 'Nb_cycle_motoring_10_1_KPH'],
+    'stationRegex': '^(SA_)?(?P<station>.*)(?P<pos>_[01])(.*)?'
     }
 
 # ************

@@ -32,10 +32,17 @@ intersecteurs = ['HDV1-PDB1', 'MAR1-FIV1', 'RIH1-REP1', 'REP1-GAM1',
                  'GAM2-REP2', 'REP2-RIH2', 'FIV2-MAR2', 'PDB2-HDV2']
 # lister les terminus
 terminus = ['CAL1', '4C2']
+# plateformes
+plateformes = ['4C1', 'CS1', 'TRI1', 'HDV1', 'PDB1', 'LEZ1', 'HEL1', 'MAR1',
+               'FIV1', 'CAU1', 'GLF1', 'RIH1', 'REP1', 'GAM1', 'WAZ1', 'PDP1',
+               'LAM1', 'CAL1', 'CAL2', 'LAM2', 'PDP2', 'WAZ2', 'GAM2', 'REP2',
+               'RIH2', 'GLF2', 'CAU2', 'FIV2', 'MAR2', 'HEL2', 'LEZ2', 'PDB2',
+               'HDV2', 'TRI2', 'CS2', '4C2']
 
 # définition track LilleL1
 LilleL1 = {'tracklist': listeVoies,
-           'pexMovements': serviceCommercial,
+           'nominalMovements': serviceCommercial,
            'turnbacks': retournements,
            'intersectors': intersecteurs,
-           'terminus': terminus}
+           'terminus': terminus,
+           'platforms': plateformes}

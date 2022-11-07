@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import re
 from xlrd import XLRDError
 from carrouselsAnalysis.dataFormat import carrouselFormat
 from carrouselsAnalysis import (titleFontSize, xaxisFontSize,
@@ -38,20 +39,23 @@ cols_EB_by_KP = ['EBTrackId', 'EB_KP']
 
 class Track:
     
-    def __init__(self, trackdef, tracklist=None, pexMovements=None,
-                 turnbacks=None, intersectors=None, terminus=None):
+    def __init__(self, trackdef, tracklist=None, nominalMovements=None,
+                 turnbacks=None, intersectors=None, terminus=None,
+                 platforms=None):
         if trackdef:
             self.tracklist = trackdef['tracklist']
-            self.pexMovements = trackdef['pexMovements']
+            self.nominalMovements = trackdef['nominalMovements']
             self.turnbacks = trackdef['turnbacks']
             self.intersectors = trackdef['intersectors']
             self.terminus = trackdef['terminus']
+            self.platforms = trackdef['platforms']
         else:
             self.tracklist = tracklist
-            self.pexMovements = pexMovements
+            self.nominalMovements = nominalMovements
             self.turnbacks = turnbacks
             self.intersectors = intersectors
             self.terminus = terminus
+            self.platforms = platforms
 
         return print('Track créée')
 
@@ -68,7 +72,7 @@ class Carrousel:
 
     def get_movement(self, path=None, fileFormat='xls', sheet=None,
                      dropna=True, dataFormat='MG', rename_cols=None,
-                     drop_cols=None):
+                     drop_cols=None, stationRegex=None):
         """import movement data from path into a pandas.DataFrame adding source,
         context and version as new columns to uniquely identify imported data
         and label graphs.
@@ -136,6 +140,7 @@ class Carrousel:
         if dataFormat:
             drop_cols = carrouselFormat[dataFormat]['movement_cols_drop']
             rename_cols  = carrouselFormat[dataFormat]['movement_cols_name']
+            stationRegex = carrouselFormat[dataFormat]['stationRegex']
             if not sheet:
                 sheet=0
 
@@ -191,13 +196,26 @@ class Carrousel:
         
         if ('StartStation' in data.columns) and ('StopStation' in
                                                  data.columns):
+            data['StartPosition'] = data['StartStation'].apply(
+                lambda x: self.__determine_upstream_downstream(x,
+                                                               stationRegex))
+            data['StartStation'] = data['StartStation'].str.extract(
+                                        stationRegex)['station']
+            data['StopPosition'] = data['StopStation'].apply(
+                lambda x: self.__determine_upstream_downstream(x,
+                                                               stationRegex))
+            data['StopStation'] = data['StopStation'].str.extract(
+                                        stationRegex)['station']
         # Define new column for mvt from mvt start to mvt stop
-            data['Movement'] = (data['StartStation'].str[:-2] + '-' +
-                                data['StopStation'].str[:-2])        
+            data['Movement'] = (data['StartStation'] + '-' +
+                                data['StopStation'])
             # determine type of movement
             if self.track:
                 data['TypeMovement'] = data['Movement'].apply(
                         lambda x: self.__determine_type_movement(x))
+                
+            data['DestType'] = data['StopStation'].apply(
+                lambda x: self.__determine_dest_type(x))
                 
         if 'TrainCorrectlyDocked' in data.columns:
         # define Correct Docking status
@@ -226,7 +244,7 @@ class Carrousel:
         # based on pexMovements attribute of track
         if self.track and ('Movement' in data.columns):
             self.nominalMovements = data[data['Movement'].isin(
-                [pex for pexlist in self.track.pexMovements.values()
+                [pex for pexlist in self.track.nominalMovements.values()
                  for pex in pexlist])]
             
             # print number of movements imported
@@ -248,7 +266,7 @@ class Carrousel:
         if self.track:
             self.nominalMovements = self.movements[
                 self.movements['Movement'].isin([pex for pexlist in
-                            self.track.pexMovements.values() for
+                            self.track.nominalMovements.values() for
                             pex in pexlist])]
             return print(f"{self.nominalMovements.shape[0]} mouvements" +
                         f" du service nominal importés")
@@ -276,6 +294,22 @@ class Carrousel:
         else:
             return 'standard'
 
+    def __determine_upstream_downstream(self, station, regexStation):
+        station = str(station)
+        match = re.search(regexStation, station)
+        if match and match.group('pos') == '_0':
+            return 'amont'
+        elif match and match.group('pos') == '_1':
+            return 'aval'
+        else:
+            return
+        
+    def __determine_dest_type(self, StopStation):
+        StopStation = str(StopStation)
+        if StopStation in self.track.platforms:
+            return 'plateforme'
+        else:
+            return 'stabling'
 
 
     def get_EB(self, path=None, fileFormat='xls', sheet=None, dropna=True,
@@ -983,7 +1017,7 @@ class Carrousel:
 
     def trace_tps_parcours(self, x='Movement', y='Duree',
                         category='TypeMovement', nominalService=True,
-                        color='tab:blue',
+                        deleteNegTimes=True, color='tab:blue',
                         figsize=(16,5), sort=True, function='mean',
                         **kwargs):
         """
@@ -1035,8 +1069,16 @@ class Carrousel:
 
         fig = plt.figure(figsize=figsize)
 
+        if nominalService:
+            data=self.nominalMovements
+        else:
+            data=self.movements
+            
+        if deleteNegTimes:
+            data = data[data[y] > 0]
+        
         if sort:
-            ordre = self.movements[x].sort_values().unique()
+            ordre = data[x].sort_values().unique()
         else:
             ordre = None
 
@@ -1053,11 +1095,6 @@ class Carrousel:
             estimator = np.min
         elif function == 'max':
             estimator = np.max
-
-        if nominalService:
-            data=self.nominalMovements
-        else:
-            data=self.movements
         
         sns.barplot(data=data, x=x, y=y, hue=category,
                     color=color, order=ordre, dodge=dodge, ci=ci,
@@ -1069,8 +1106,8 @@ class Carrousel:
 
     def trace_disp_tps_parcours(self, x='Movement', y='Duree',
                         category='TypeMovement', nominalService=True,
-                        color='tab:blue',
-                        figsize=(16,5), ylim=None, sort=True,
+                        deleteNegTimes=True, color='tab:blue',
+                        figsize=(16,5), sort=True,
                         **kwargs):
         """
 
@@ -1112,8 +1149,16 @@ class Carrousel:
 
         fig = plt.figure(figsize=figsize)
 
+        if nominalService:
+            data=self.nominalMovements
+        else:
+            data=self.movements
+            
+        if deleteNegTimes:
+            data = data[data[y] > 0]
+        
         if sort:
-            ordre = self.movements[x].sort_values().unique()
+            ordre = data[x].sort_values().unique()
         else:
             ordre = None
 
@@ -1121,13 +1166,8 @@ class Carrousel:
             color= None
 
         dodge = kwargs.pop('dodge', False)
-        
-        if nominalService:
-            data=self.nominalMovements
-        else:
-            data=self.movements
             
-        sns.boxplot(data=self.movements, x=x, y=y, hue=category,
+        sns.boxplot(data=data, x=x, y=y, hue=category,
                     color=color, order=ordre, dodge=dodge, **kwargs)
 
 
@@ -1229,7 +1269,8 @@ class Carrousel:
         
         return plt.show()
     
-    def histo_precision(self, x='DistanceSSP', xRange=(-2, 2),
+    def histo_precision(self, x='DistanceSSP', platformsOnly=True,
+                        xRange=(-2, 2),
                         bins=30, y='count', style='bar', alpha=1,
                         figsize=(8,5), color='tab:blue',
                         **kwargs):
@@ -1254,12 +1295,18 @@ class Carrousel:
         else:
             data=self.movements
         
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
+        
         xlim = decorators['xlim']
         if not xlim:
             xlim=(xRange[1], xRange[0])
         
         if y == 'freq':
-            weights = [100/data.shape[0]] * data.shape[0]
+            if data.shape[0] != 0:
+                weights = [100/data.shape[0]] * data.shape[0]
+            else:
+                weights = None
             decorators['yLabel'] = "Frequence d'occurence (%)"
         else:
             weights=None
@@ -1278,7 +1325,8 @@ class Carrousel:
         return plt.show()
     
     def histo_precision_compare(self, dataCompare,
-                        x='DistanceSSP', xRange=(-2, 2),
+                        x='DistanceSSP', platformsOnly=True,
+                        xRange=(-2, 2),
                         bins=30, y='count', 
                         globalFreq = True,
                         style='bar', alpha=None,
@@ -1306,6 +1354,9 @@ class Carrousel:
                 self.movements[x].between(xRange[0], xRange[1])]
         else:
             data=self.movements
+            
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
 
         listValues = list(data[dataCompare].unique())
         nbCat = len(listValues)
@@ -1334,11 +1385,17 @@ class Carrousel:
             if globalFreq == True:
                 decorators['yLabel'] = "Freq. occurence globale (%)"
                 for i in range(nbCat):
-                    weights.append([100/data.shape[0]] * datas[i].shape[0])
+                    if data.shape[0] != 0:
+                        weights.append([100/data.shape[0]] * datas[i].shape[0])
+                    else:
+                        weights.append(None)
             else:
                 decorators['yLabel'] = "Freq. occurence par cat. (%)"
                 for i in range(nbCat):
-                    weights.append([100/datas[i].shape[0]] * datas[i].shape[0])
+                    if datas[i].shape[0] != 0:
+                        weights.append([100/datas[i].shape[0]] * datas[i].shape[0])
+                    else:
+                        weights.append(None)
         else:
             if style == 'barstacked':
                 weights = None
@@ -1373,7 +1430,8 @@ class Carrousel:
     
     
     def histo_precision_filter(self, dataFilter, filterValue,
-                        x='DistanceSSP', xRange=(-2, 2),
+                        x='DistanceSSP', platformsOnly=True,
+                        xRange=(-2, 2),
                         bins=30, y='count', 
                         style='bar', alpha=1,
                         figsize=(8,5),
@@ -1403,6 +1461,9 @@ class Carrousel:
         else:
             data=self.movements
             
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
+            
         if dataFilter and (filterValue != None):
             data = data[data[dataFilter] == filterValue]
             
@@ -1411,7 +1472,10 @@ class Carrousel:
             xlim=(xRange[1], xRange[0])
         
         if y == 'freq':
-            weights = [100/data.shape[0]] * data.shape[0]
+            if data.shape[0] != 0:
+                weights = [100/data.shape[0]] * data.shape[0]
+            else:
+                weights = None
             decorators['yLabel'] = "Frequence d'occurence (%)"
         else:
             weights=None
