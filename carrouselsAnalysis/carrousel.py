@@ -62,16 +62,18 @@ class Track:
 
 class Carrousel:
 
-    def __init__(self, source, context, track=None, build=None, dataPath=None):
+    def __init__(self, source, context, track=None, build=None, dataPath=None,
+                dataFormat=None):
         self.track = track
         self.dataPath = dataPath
         self.source = source
         self.context = context
         self.build = build
+        self.dataFormat = dataFormat
         return print('Carrousel créé')
 
     def get_movement(self, path=None, fileFormat='xls', sheet=None,
-                     dropna=True, dataFormat='MG', rename_cols=None,
+                     dropna=False, dataFormat=None, rename_cols=None,
                      drop_cols=None, stationRegex=None):
         """import movement data from path into a pandas.DataFrame adding source,
         context and version as new columns to uniquely identify imported data
@@ -134,6 +136,9 @@ class Carrousel:
         # inherited from class Carrousel
         if not path:
             path = self.dataPath
+        
+        if (not dataFormat) and self.dataFormat:
+            dataFormat = self.dataFormat
             
         # si le format de data est défini, alors on utilise les données
         # drop_cols et rename_cols du format choisi
@@ -312,8 +317,8 @@ class Carrousel:
             return 'stabling'
 
 
-    def get_EB(self, path=None, fileFormat='xls', sheet=None, dropna=True,
-               moving=True, dataFormat='MG', drop_cols=None,
+    def get_EB(self, path=None, fileFormat='xls', sheet=None, dropna=False,
+               moving=True, dataFormat=None, drop_cols=None,
                filter_col='TrainEB', rename_cols=None):
         """import EB data from path into a pandas.DataFrame adding source,
         context and version as new columns to uniquely identify imported data
@@ -369,6 +374,9 @@ class Carrousel:
         # inherited from class Carrousel
         if not path:
             path = self.dataPath
+            
+        if (not dataFormat) and self.dataFormat:
+            dataFormat = self.dataFormat
 
         # si le format de data est défini, alors on utilise les données
         # drop_cols, rename_cols et filter_cols du format choisi
@@ -533,6 +541,7 @@ class Carrousel:
         return
     
     def trace_precision_station(self, x='DistanceSSP', y='StopStation',
+                                platformsOnly=True,
                                 color='tab:blue', figsize=(8,10),
                                 category=None,
                                 sort=True, trace_moy=True,
@@ -598,12 +607,19 @@ class Carrousel:
         if category:
             color=None
 
+        data = self.movements
+        
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']    
+        
         # If sort is True, the order used is alphabetical order of stop stations
         if sort:
-            ordre=self.movements[y].sort_values().unique()
+            ordre = ([stat for stat in self.track.platforms
+                     if stat in data['StopStation'].unique()] +
+                     [stat for stat in data[y].sort_values().unique()
+                      if stat not in self.track.platforms])
         else:
             ordre=None
-
 
         orientation = kwargs.pop('orient', 'h')
 
@@ -615,20 +631,21 @@ class Carrousel:
         # dodge parameter set to False prevents having a bar for each 'y' value
         # and for each 'hue' category: here the 'hue' parameter is just used to
         # color code each bar depending on category of hue.
-        sns.barplot(data=self.movements, y=y, x=x,
+        sns.barplot(data=data, y=y, x=x,
                     color=color, orient=orientation, hue=category, ci=ci,
                     dodge=dodge, order=ordre, **kwargs)
         
         if trace_moy:
         # let plot the mean for distance to SSP across all data set
-            plt.axvline(self.movements[x].mean(), color='r', ls='--',
-                label=f"Moyenne = {self.movements[x].mean():.2f}")
+            plt.axvline(data[x].mean(), color='r', ls='--',
+                label=f"Moyenne = {data[x].mean():.2f}")
         
         self.__set_decorators(decorators)
 
         return plt.show()
 
     def trace_dispersion_station(self, x='DistanceSSP', y='StopStation',
+                        platformsOnly=True,
                         color='tab:blue', figsize=(8,10),
                         category=None,
                         sort=True, trace_moy=True,
@@ -678,10 +695,18 @@ class Carrousel:
         # is omitted to let seaborn choos the color palette
         if category:
             color=None
+            
+        data = self.movements
+        
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
 
         # If sort is True, the order used is alphabetical order of stop stations
         if sort:
-            ordre=self.movements[y].sort_values().unique()
+            ordre = ([stat for stat in self.track.platforms
+                     if stat in data['StopStation'].unique()] +
+                     [stat for stat in data[y].sort_values().unique()
+                      if stat not in self.track.platforms])
         else:
             ordre=None
 
@@ -692,13 +717,13 @@ class Carrousel:
         # dodge parameter set to False prevents having a bar for each 'y' value
         # and for each 'hue' category: here the 'hue' parameter is just used to
         # color code each bar depending on category of hue.
-        sns.boxplot(data=self.movements, x=x, y=y, color=color,
+        sns.boxplot(data=data, x=x, y=y, color=color,
                     hue=category, orient=orientation, order=ordre, dodge=dodge,
                     **kwargs)
  
         if trace_moy:
-            plt.axvline(self.movements[x].mean(), color='r', ls='--',
-                label=f"Moyenne = {self.movements[x].mean():.2f}")
+            plt.axvline(data[x].mean(), color='r', ls='--',
+                label=f"Moyenne = {data[x].mean():.2f}")
 
         self.__set_decorators(decorators)
 
@@ -706,6 +731,7 @@ class Carrousel:
 
 
     def trace_precision_train(self, x='DistanceSSP', y='Train',
+                              platformsOnly=True,
                               color='tab:blue', figsize=(8,10),
                               category=None,
                               sort=True, trace_moy=True,
@@ -737,9 +763,14 @@ class Carrousel:
 
         """
         
+        if platformsOnly:
+            defaultTitle = "Précision moyenne des arrêts en station par train"
+        else:
+            defaultTitle = "Précision moyenne des arrêts par train"
+        
         defaultDecorators={
             'legend': True,
-            'title': "Précision moyenne des arrêts par train",
+            'title': defaultTitle,
             'xLabel': "Distance au SSP",
             'yLabel': "Numéro du train",
             'xlim': (1,-1)}
@@ -756,10 +787,15 @@ class Carrousel:
         # is omitted to let seaborn choos the color palette
         if category:
             color=None
+            
+        data = self.movements
+        
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
 
         # If sort is True, the order used is increasing order of train number
         if sort:
-            ordre=self.movements[y].sort_values().unique()
+            ordre=data[y].sort_values().unique()
         else:
             ordre=None
 
@@ -773,20 +809,21 @@ class Carrousel:
         # dodge parameter set to False prevents having a bar for each 'y' value
         # and for each 'hue' category: here the 'hue' parameter is just used to
         # color code each bar depending on category of hue.
-        sns.barplot(data=self.movements, y=y, x=x,
+        sns.barplot(data=data, y=y, x=x,
                     color=color, orient=orientation, hue=category, ci=ci,
                     dodge=dodge, order=ordre, **kwargs)
         
         if trace_moy:
         # let plot the mean for distance to SSP across all data set
-            plt.axvline(self.movements[x].mean(), color='r', ls='--',
-                label=f"Moyenne = {self.movements[x].mean():.2f}")
+            plt.axvline(data[x].mean(), color='r', ls='--',
+                label=f"Moyenne = {data[x].mean():.2f}")
 
         self.__set_decorators(decorators)
         
         return plt.show()
 
     def trace_dispersion_train(self, x='DistanceSSP', y='Train',
+                               platformsOnly=True,
                                color='tab:blue', figsize=(8,10),
                                category=None,
                                sort=True, trace_moy=True,
@@ -820,9 +857,14 @@ class Carrousel:
 
         """
         
+        if platformsOnly:
+            defaultTitle = "Répartition des arrêts en station par train"
+        else:
+            defaultTitle = "Répartition des arrêts par train"
+        
         defaultDecorators={
             'legend': True,
-            'title': "Répartition statistique des arrêts par train",
+            'title': defaultTitle,
             'xLabel': "Distance au SSP",
             'yLabel': "Numéro du train",
             'xlim': (1,-1)}
@@ -839,10 +881,15 @@ class Carrousel:
         # is omitted to let seaborn choos the color palette
         if category:
             color=None
+            
+        data = self.movements
+        
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
 
         # If sort=True, the order used is the increasing order of train number
         if sort:
-            ordre=self.movements[y].sort_values().unique()
+            ordre=data[y].sort_values().unique()
         else:
             ordre=None
 
@@ -853,13 +900,13 @@ class Carrousel:
         # dodge parameter set to False prevents having a bar for each 'y' value
         # and for each 'hue' category: here the 'hue' parameter is just used to
         # color code each bar depending on category of hue.
-        sns.boxplot(data=self.movements, x=x, y=y, color=color,
+        sns.boxplot(data=data, x=x, y=y, color=color,
                     hue=category, orient=orientation, order=ordre, dodge=dodge,
                     **kwargs)
 
         if trace_moy:
-            plt.axvline(self.movements[x].mean(), color='r', ls='--',
-                label=f"Moyenne = {self.movements[x].mean():.2f}")
+            plt.axvline(data[x].mean(), color='r', ls='--',
+                label=f"Moyenne = {data[x].mean():.2f}")
 
         self.__set_decorators(decorators)
         
@@ -1072,13 +1119,18 @@ class Carrousel:
         if nominalService:
             data=self.nominalMovements
         else:
-            data=self.movements
+            data=self.movements[self.movements['Movement'].notnull()]
             
         if deleteNegTimes:
             data = data[data[y] > 0]
         
         if sort:
-            ordre = data[x].sort_values().unique()
+            nominalMovementsList = [pex for pexlist in 
+                    self.track.nominalMovements.values() for pex in pexlist]
+            ordre = ([move for move in nominalMovementsList
+                      if move in data[x].unique()] +
+                     [move for move in data[x].unique()
+                      if move not in nominalMovementsList])
         else:
             ordre = None
 
@@ -1152,13 +1204,18 @@ class Carrousel:
         if nominalService:
             data=self.nominalMovements
         else:
-            data=self.movements
+            data=self.movements[self.movements['Movement'].notnull()]
             
         if deleteNegTimes:
             data = data[data[y] > 0]
         
         if sort:
-            ordre = data[x].sort_values().unique()
+            nominalMovementsList = [pex for pexlist in 
+                    self.track.nominalMovements.values() for pex in pexlist]
+            ordre = ([move for move in nominalMovementsList
+                      if move in data[x].unique()] +
+                     [move for move in data[x].unique()
+                      if move not in nominalMovementsList])
         else:
             ordre = None
 
@@ -1270,7 +1327,7 @@ class Carrousel:
         return plt.show()
     
     def histo_precision(self, x='DistanceSSP', platformsOnly=True,
-                        xRange=(-2, 2),
+                        xRange=(-1.5, 1.5),
                         bins=30, y='count', style='bar', alpha=1,
                         figsize=(8,5), color='tab:blue',
                         **kwargs):
@@ -1326,7 +1383,7 @@ class Carrousel:
     
     def histo_precision_compare(self, dataCompare,
                         x='DistanceSSP', platformsOnly=True,
-                        xRange=(-2, 2),
+                        xRange=(-1.5, 1.5),
                         bins=30, y='count', 
                         globalFreq = True,
                         style='bar', alpha=None,
@@ -1386,14 +1443,16 @@ class Carrousel:
                 decorators['yLabel'] = "Freq. occurence globale (%)"
                 for i in range(nbCat):
                     if data.shape[0] != 0:
-                        weights.append([100/data.shape[0]] * datas[i].shape[0])
+                        weights.append([100/data.shape[0]] *
+                                       datas[i].shape[0])
                     else:
                         weights.append(None)
             else:
                 decorators['yLabel'] = "Freq. occurence par cat. (%)"
                 for i in range(nbCat):
                     if datas[i].shape[0] != 0:
-                        weights.append([100/datas[i].shape[0]] * datas[i].shape[0])
+                        weights.append([100/datas[i].shape[0]] *
+                                       datas[i].shape[0])
                     else:
                         weights.append(None)
         else:
@@ -1431,7 +1490,7 @@ class Carrousel:
     
     def histo_precision_filter(self, dataFilter, filterValue,
                         x='DistanceSSP', platformsOnly=True,
-                        xRange=(-2, 2),
+                        xRange=(-1.5, 1.5),
                         bins=30, y='count', 
                         style='bar', alpha=1,
                         figsize=(8,5),
@@ -1499,6 +1558,7 @@ class Carrousel:
     
     def missed_stops_pct_by_station(self, x='CorrectDocking',
                             cat='StopStation',
+                            platformsOnly=True,
                             color='tab:blue',
                             figsize=(20,8),
                             **kwargs):
@@ -1518,7 +1578,7 @@ class Carrousel:
         
         fig = plt.figure(figsize=figsize)
         
-        self.__missed_stops_pct_by_cat(x, cat, color, **kwargs)
+        self.__missed_stops_pct_by_cat(x, cat, platformsOnly, color, **kwargs)
         
         self.__set_decorators(decorators)
         
@@ -1526,13 +1586,19 @@ class Carrousel:
     
     def missed_stops_pct_by_train(self, x='CorrectDocking',
                             cat='Train',
+                            platformsOnly=False,
                             color='tab:blue',
                             figsize=(20,8),
                             **kwargs):
         
+        if platformsOnly:
+            defaultTitle = "Pourcentage d'arrêts ratés en station par train"
+        else:
+            defaultTitle = "Pourcentage d'arrêts ratés par train"
+        
         defaultDecorators={
             'legend': False,
-            'title': "Pourcentage d'arrêts ratés par train",
+            'title': defaultTitle,
             'xLabel': "Numéro du train",
             'xticksRotation': 0,
             'yLabel': "Arrêts ratés (%)"}
@@ -1545,17 +1611,36 @@ class Carrousel:
         
         fig = plt.figure(figsize=figsize)
         
-        self.__missed_stops_pct_by_cat(x, cat, color, **kwargs)
+        self.__missed_stops_pct_by_cat(x, cat, platformsOnly, color, **kwargs)
         
         self.__set_decorators(decorators)
         
         return plt.show()
     
-    def __missed_stops_pct_by_cat(self, x, cat, color, **kwargs):
+    def __missed_stops_pct_by_cat(self, x, cat, platformsOnly, color,
+                                  **kwargs):
         
-        missed_stops_pct_by_cat = self.movements.groupby(cat)[x].value_counts(
+        data = self.movements
+        
+        if platformsOnly:
+            data = data[data['DestType'] == 'plateforme']
+
+        sort = kwargs.pop('sort', True)
+        
+        if sort and cat == 'StopStation':
+            ordre = ([stat for stat in self.track.platforms
+                     if stat in data[cat].unique()] +
+                     [stat for stat in data[cat].unique()
+                      if stat not in self.track.platforms])
+        elif sort and cat == 'Train':
+            ordre = data[cat].sort_values().unique()
+        else:
+            ordre=None
+        
+        missed_stops_pct_by_cat = data.groupby(cat)[x].value_counts(
             normalize=True).unstack()[False].fillna(0).round(3)*100
 
         sns.barplot(x=missed_stops_pct_by_cat.index,
                     y=missed_stops_pct_by_cat.values,
+                    order=ordre,
                     color=color)
