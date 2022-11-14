@@ -11,7 +11,16 @@ Ceci est un module python qui contient la définition des tracks de reference.
 
 # définir la liste des voies principales du carrousel sous la forme d'un
 # tuple ('nom', trackid)
-listeVoies = [('V1', 3, 13000), ('V2', 2, 13000)]
+listeVoies = [{'trackName': 'V1',
+               'trackId': 3003,
+               'trackKPmax': 13000,
+               'trackNominalRunningDistance': 12569,
+               'trackNominalDwellTimes': 351.5},
+              {'trackName': 'V2',
+               'trackId': 3002,
+               'trackKPmax': 13000,
+               'trackNominalRunningDistance': 12569,
+               'trackNominalDwellTimes': 357.5}]
 # lister les mouvements nominaux, par voie déclarée ci-dessus - key = nomtrack
 serviceCommercial = {'V1': ['4C1-CS1', 'CS1-TRI1', 'TRI1-HDV1', 'HDV1-PDB1',
                             'PDB1-LEZ1', 'LEZ1-HEL1', 'HEL1-MAR1', 'MAR1-FIV1',
@@ -24,9 +33,10 @@ serviceCommercial = {'V1': ['4C1-CS1', 'CS1-TRI1', 'TRI1-HDV1', 'HDV1-PDB1',
                             'LEZ2-PDB2', 'PDB2-HDV2', 'HDV2-TRI2', 'TRI2-CS2',
                             'CS2-4C2']}
 # lister les movements de retournements
-retournements = ['4C2-4CEV2', '4CEV2-4C1', 'CAL1-CALOV1', 'CALOV1-CAL2',
+retournements = {'nominalService': ['4C2-4CEV2', '4CEV2-4C1'],
+                 'provisoryService': ['CAL1-CALOV1', 'CALOV1-CAL2',
                  'HDV1-HDVOV1', 'HDVOV1-HDV2', 'FIV2-FIVEV2', 'FIVEV2-FIV1',
-                 'REP2-REPEV2', 'REPEV2-REP1']
+                 'REP2-REPEV2', 'REPEV2-REP1']}
 # lister les movements avec intersecteur
 intersecteurs = ['HDV1-PDB1', 'MAR1-FIV1', 'RIH1-REP1', 'REP1-GAM1',
                  'GAM2-REP2', 'REP2-RIH2', 'FIV2-MAR2', 'PDB2-HDV2']
@@ -40,7 +50,7 @@ plateformes = ['4C1', 'CS1', 'TRI1', 'HDV1', 'PDB1', 'LEZ1', 'HEL1', 'MAR1',
                'HDV2', 'TRI2', 'CS2', '4C2']
 
 # définition track LilleL1
-LilleL1 = {'tracklist': listeVoies,
+LilleL1 = {'maintracklist': listeVoies,
            'nominalMovements': serviceCommercial,
            'turnbacks': retournements,
            'intersectors': intersecteurs,

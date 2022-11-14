@@ -1,4 +1,4 @@
-__version__ = 0.5
+__version__ = 0.9
 __author__ = "Tiphaine GRAILLAT for ALSTOM"
 
 

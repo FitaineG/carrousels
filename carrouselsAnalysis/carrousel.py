@@ -11,6 +11,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import re
 from xlrd import XLRDError
+from itertools import chain
 from carrouselsAnalysis.dataFormat import carrouselFormat
 from carrouselsAnalysis import (titleFontSize, xaxisFontSize,
                                         yaxisFontSize)        
@@ -39,18 +40,18 @@ cols_EB_by_KP = ['EBTrackId', 'EB_KP']
 
 class Track:
     
-    def __init__(self, trackdef, tracklist=None, nominalMovements=None,
+    def __init__(self, trackdef, maintracklist=None, nominalMovements=None,
                  turnbacks=None, intersectors=None, terminus=None,
                  platforms=None):
         if trackdef:
-            self.tracklist = trackdef['tracklist']
+            self.maintracklist = trackdef['maintracklist']
             self.nominalMovements = trackdef['nominalMovements']
             self.turnbacks = trackdef['turnbacks']
             self.intersectors = trackdef['intersectors']
             self.terminus = trackdef['terminus']
             self.platforms = trackdef['platforms']
         else:
-            self.tracklist = tracklist
+            self.maintracklist = maintracklist
             self.nominalMovements = nominalMovements
             self.turnbacks = turnbacks
             self.intersectors = intersectors
@@ -241,7 +242,14 @@ class Carrousel:
                 lambda row: self.__determine_resistivity_state(row,
                                                             detailed=False),
                 axis=1)
+        
+        if 'StopTrackId' in data.columns:        
+            data['StopTrackId'] = data['StopTrackId'].apply(
+                    lambda x: self.__transform_track_id(x))
             
+            data['StopTrackName'] = data['StopTrackId'].apply(
+                lambda x: self.__get_track_name_from_id(x))
+        
         # define movements attribute based on data pd.DataFrame with reset index
         self.movements = data.reset_index()
         
@@ -249,8 +257,7 @@ class Carrousel:
         # based on pexMovements attribute of track
         if self.track and ('Movement' in data.columns):
             self.nominalMovements = data[data['Movement'].isin(
-                [pex for pexlist in self.track.nominalMovements.values()
-                 for pex in pexlist])]
+                list(chain(*self.track.nominalMovements.values())))]
             
             # print number of movements imported
             return print(f"{self.movements.shape[0]} mouvements importés" +
@@ -270,9 +277,8 @@ class Carrousel:
     def create_nominalMovements(self):
         if self.track:
             self.nominalMovements = self.movements[
-                self.movements['Movement'].isin([pex for pexlist in
-                            self.track.nominalMovements.values() for
-                            pex in pexlist])]
+                self.movements['Movement'].isin(
+                    list(chain(*self.track.nominalMovements.values())))]
             return print(f"{self.nominalMovements.shape[0]} mouvements" +
                         f" du service nominal importés")
         else:
@@ -294,7 +300,7 @@ class Carrousel:
         elif (mouvement[-4:] in self.track.terminus) or (
               mouvement[-3:] in self.track.terminus):
             return 'terminus'
-        elif (mouvement in self.track.turnbacks):
+        elif (mouvement in list(chain(*self.track.turnbacks.values()))):
             return 'retournement'
         else:
             return 'standard'
@@ -315,8 +321,27 @@ class Carrousel:
             return 'plateforme'
         else:
             return 'stabling'
-
-
+        
+    def __transform_track_id(self, trackId):
+        trackId = str(trackId)
+        for id in [self.track.maintracklist[i]['trackId']
+                   for i in range(len(self.track.maintracklist))]:
+            if trackId == str(id - 3000):
+                return str(id)
+            elif (trackId.find(str(id)) != -1):
+                return str(id)
+        return trackId
+              
+    def __get_track_name_from_id(self, trackId):
+        trackId = str(trackId)
+        for i, id in enumerate([self.track.maintracklist[i]['trackId']
+                        for i in range(len(self.track.maintracklist))]):
+            if trackId == str(id):
+                return self.track.maintracklist[i]['trackName']
+        
+        return 'unknown'
+        
+        
     def get_EB(self, path=None, fileFormat='xls', sheet=None, dropna=False,
                moving=True, dataFormat=None, drop_cols=None,
                filter_col='TrainEB', rename_cols=None):
@@ -456,11 +481,18 @@ class Carrousel:
         else:
             print('No `version` attribute could be computed')
         
-        self.emergencyBrakings = data.reset_index()
-        
         if 'DateEB' in data.columns:
-            self.emergencyBrakings['Time'] = pd.to_datetime(
-                self.emergencyBrakings['DateEB'])
+            data['Time'] = pd.to_datetime(
+                data['DateEB'])
+              
+        if 'EBTrackId' in data.columns:        
+            data['EBTrackId'] = data['EBTrackId'].apply(
+                    lambda x: self.__transform_track_id(x))
+              
+            data['EBTrackName'] = data['EBTrackId'].apply(
+                lambda x: self.__get_track_name_from_id(x))
+            
+        self.emergencyBrakings = data.reset_index()
         
         if moving and ('Speed' in data.columns):
             return print(f"{data.shape[0]} EB en mouvement importés")
@@ -472,12 +504,7 @@ class Carrousel:
         
         decorators = {}
         for d in decoratorsList:
-            if d == 'locLegend':
-                decorators[d] = kwargs.pop(d, 'best')
-            elif d == 'supTitleY':
-                decorators[d] = kwargs.pop(d, 1.02)
-            else:
-                decorators[d] = kwargs.pop(d, None)
+            decorators[d] = kwargs.pop(d, None)
 
         return decorators, kwargs
     
@@ -496,10 +523,10 @@ class Carrousel:
         elif d['legend']:
             plt.legend(title=d['legendTitle'], loc=d['locLegend'])
         # supTitle
-        if d['supTitleSize']:
+        if d['supTitleSize'] and d['supTitle']:
             plt.suptitle(d['supTitle'], size=d['supTitleSize'],
                          y=d['supTitleY'])
-        else:
+        elif d['supTitle']:
             plt.suptitle(d['supTitle'], size=titleFontSize,
                         y=d['supTitleY'])
         # title
@@ -525,7 +552,7 @@ class Carrousel:
         # xticks
         if d['xticks']:
             plt.xticks(d['xticks'], rotation=d['xticksRotation'])
-        elif d['xticksRotation']:
+        elif d['xticksRotation'] != None:
             plt.xticks(rotation=d['xticksRotation'])
         # ylim
         if d['ylim']:
@@ -588,6 +615,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': "Précision moyenne des arrêts par station",
             'xLabel': "Distance au SSP",
             'yLabel': "Station d'arrivée",
@@ -678,10 +706,11 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': "Répartition statistique des arrêts par station",
             'xLabel': "Distance au SSP",
             'yLabel': "Station d'arrivée",
-            'xlim': (1,-1)}
+            'xlim': (1.3,-1.3)}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
         
@@ -770,6 +799,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': defaultTitle,
             'xLabel': "Distance au SSP",
             'yLabel': "Numéro du train",
@@ -864,10 +894,11 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': defaultTitle,
             'xLabel': "Distance au SSP",
             'yLabel': "Numéro du train",
-            'xlim': (1,-1)}
+            'xlim': (1.3,-1.3)}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
         
@@ -912,7 +943,7 @@ class Carrousel:
         
         return plt.show()
 
-    def trace_EB_by_KP(self, x='EB_KP', y='EBTrackId', bins=100,
+    def trace_EB_by_KP(self, x='EB_KP', y='EBTrackName', bins=100,
                     color='tab:blue', figsize=(20, 8),
                     **kwargs):
         """
@@ -942,6 +973,7 @@ class Carrousel:
             'legend': False,
             'supTitle': "Répartition des FUs par KP",
             'supTitleSize': 20,
+            'supTitleY': 1.02,
             'xLabel': "Points kilométriques",
             'invertXaxis': True,
             'xticksRotation': 30,
@@ -955,28 +987,28 @@ class Carrousel:
         
         fig = plt.figure(figsize=figsize)
 
-        if not self.track.tracklist:
+        if not self.track.maintracklist:
             message = """Pour tracer ce graphe, le carrousel doit être associé à
             une track contenant une liste de voies"""
             return message
 
-        nb_graphs = len(self.track.tracklist)
+        nb_graphs = len(self.track.maintracklist)
         
         xlim=decorators['xlim']
         
         if xlim:
             kpRange=(min(xlim), max(xlim))
         
-        for i, t in enumerate(self.track.tracklist):
+        for i, t in enumerate(self.track.maintracklist):
             # creating as many subplots as the number of tracks declared
             plt.subplot(nb_graphs,1,i+1)
             if not xlim:
-                kpRange = (0, t[2])
+                kpRange = (0, t['trackKPmax'])
             plt.hist(self.emergencyBrakings.loc[
-                self.emergencyBrakings[y] == t[1], x],
+                self.emergencyBrakings[y] == t['trackName'], x],
                      bins=bins, color=color, range=kpRange, **kwargs)
 
-            d = {'yLabel': f"{t[0]}",
+            d = {'yLabel': f"{t['trackName']}",
                  'yLabelSize': decorators['yLabelSize'],
                  'ylim': decorators['ylim'],
                  'invertYaxis': decorators['invertYaxis'],
@@ -1066,7 +1098,7 @@ class Carrousel:
                         category='TypeMovement', nominalService=True,
                         deleteNegTimes=True, color='tab:blue',
                         figsize=(16,5), sort=True, function='mean',
-                        **kwargs):
+                        trace_moy=True, **kwargs):
         """
 
         Parameters
@@ -1092,21 +1124,43 @@ class Carrousel:
 
         """
 
+        defaultYLabel = 'Durée (s)'
+        
         if function == 'mean':
             defaultTitle = "Temps de parcours moyen par mouvement"
+            estimator= np.mean
         elif function == 'min':
             defaultTitle = "Temps de parcours mini par mouvement"
+            estimator = np.min
         elif function == 'max':
             defaultTitle = "Temps de parcours maxi par mouvement"
+            estimator = np.max
+        elif function == 'std':
+            defaultTitle = "Écart type des temps de parcours par mouvement"
+            defaultYLabel = "Écart type de la distribution de durée"
+            estimator = np.std
+        elif function == 'mean-min':
+            defaultTitle = "Différence entre temps de parcours moyen et mini par mouvement"
+            defaultYLabel = "Différence de durée (s)"
+            estimator = lambda x: np.mean(x) - np.min(x)
+        elif function == 'median-min':
+            defaultTitle = "Différence entre temps de parcours médian et mini par mouvement"
+            defaultYLabel = "Différence de durée (s)"
+            estimator = lambda x: np.median(x) - np.min(x)
+        elif function == 'median':
+            defaultTitle = "Temps de parcours median par mouvement"
+            estimator = np.median
         else:
             defaultTitle = "Temps de parcours"
+            estimator = function
             
+        
         defaultDecorators={
-            'legend': False,
+            'legend': True,
             'title': defaultTitle,
             'xLabel': "Mouvement",
             'xticksRotation': 90,
-            'yLabel': "Durée du mouvement"}
+            'yLabel': defaultYLabel}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
         
@@ -1141,17 +1195,16 @@ class Carrousel:
 
         dodge = kwargs.pop('dodge', False)
         
-        if function == 'mean':
-            estimator= np.mean
-        elif function == 'min':
-            estimator = np.min
-        elif function == 'max':
-            estimator = np.max
-        
         sns.barplot(data=data, x=x, y=y, hue=category,
                     color=color, order=ordre, dodge=dodge, ci=ci,
                     estimator=estimator, **kwargs)
-
+        
+        if trace_moy and (function == 'mean-min') or (function == 'median-min'):
+            times = data.groupby(x)[y].agg(estimator).reset_index()
+            lostTimeMean = times[y].mean()
+            plt.axhline(lostTimeMean, color='r', ls='--',
+                label=f"Temps moyen perdu par station {lostTimeMean:.1f}s")
+                        
         self.__set_decorators(decorators)
 
         return plt.show()
@@ -1191,7 +1244,8 @@ class Carrousel:
             'title': "Répartition statistique des temps de parcours",
             'xLabel': "Mouvement",
             'xticksRotation': 90,
-            'yLabel': "Durée du mouvement"}
+            'yLabel': "Durée du mouvement",
+            'ylim': (40, 110)}
         
         decorators, kwargs = self.__extract_decorators(**kwargs)
         
@@ -1327,7 +1381,7 @@ class Carrousel:
         return plt.show()
     
     def histo_precision(self, x='DistanceSSP', platformsOnly=True,
-                        xRange=(-1.5, 1.5),
+                        xRange=(-1.3, 1.3),
                         bins=30, y='count', style='bar', alpha=1,
                         figsize=(8,5), color='tab:blue',
                         **kwargs):
@@ -1376,14 +1430,11 @@ class Carrousel:
                  
         self.__set_decorators(decorators)
         
-#        if isinstance(bins, list):
-#            plt.xticks(bins, rotation=decorators['xticksRotation'])
-        
         return plt.show()
     
     def histo_precision_compare(self, dataCompare,
                         x='DistanceSSP', platformsOnly=True,
-                        xRange=(-1.5, 1.5),
+                        xRange=(-1.3, 1.3),
                         bins=30, y='count', 
                         globalFreq = True,
                         style='bar', alpha=None,
@@ -1394,6 +1445,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': "Répartition statistique des arrêts en station",
             'xLabel': "Distance au SSP (m)"}
         
@@ -1490,7 +1542,7 @@ class Carrousel:
     
     def histo_precision_filter(self, dataFilter, filterValue,
                         x='DistanceSSP', platformsOnly=True,
-                        xRange=(-1.5, 1.5),
+                        xRange=(-1.3, 1.3),
                         bins=30, y='count', 
                         style='bar', alpha=1,
                         figsize=(8,5),
@@ -1499,6 +1551,7 @@ class Carrousel:
         
         defaultDecorators={
             'legend': True,
+            'locLegend': 'best',
             'title': "Répartition statistique des arrêts en station",
             'xLabel': "Distance au SSP (m)"}
         
@@ -1643,4 +1696,107 @@ class Carrousel:
         sns.barplot(x=missed_stops_pct_by_cat.index,
                     y=missed_stops_pct_by_cat.values,
                     order=ordre,
-                    color=color)
+                    color=color, **kwargs)
+
+    
+    def commercial_speed_by_track(self, trackname='StopTrackName',
+                        groupby='Movement', times='Duree',
+                        dwells=None, timeOffset=3,
+                        deleteNegTimes=True,
+                        colors=None,
+                        figsize=(8,5), function=['min', 'median'],
+                        **kwargs):
+        
+        if timeOffset != 0:
+            defaultLegendTitle = f'Tps parcours + {timeOffset}s'
+        else:
+            defaultLegendTitle = 'Tps parcours'
+        
+        defaultDecorators={
+            'legend': True,
+            'locLegend': 'upper center',
+            'legendTitle': defaultLegendTitle,
+            'title': "Vitesse commerciale par voie",
+            'xLabel': "Track",
+            'xticksRotation': 0,
+            'yLabel': "Vitesse commerciale (km/h)",
+            'ylim': (28,35)}
+        
+        decorators, kwargs = self.__extract_decorators(**kwargs)
+        
+        for d in defaultDecorators:
+            if decorators[d] == None:
+                decorators[d] = defaultDecorators[d]
+        
+        if not self.nominalMovements.empty:
+            data = self.nominalMovements
+        else:
+            print('Nominal movements shall be defined to compute commercial speed')
+            return
+        
+        tracklist=self.track.maintracklist
+        nbtrackslist=range(len(tracklist))
+        
+        if not isinstance(function, list):
+            function = [function]
+        
+        if (colors != None) and len(function) > len(colors):
+            colors=None
+        
+        if deleteNegTimes:
+            data = data[data[times] > 0]
+        
+        running_times = data.groupby([groupby, trackname])[times].agg(function).reset_index()
+        
+        nbNominalMovements = 0
+        for nominalMoves in self.track.nominalMovements.values():
+            nbNominalMovements += len(nominalMoves)
+        
+        if running_times.shape[0] != nbNominalMovements:
+            print(f'nb mouvements uniques: {running_times.shape[0]}')
+            print(f'nb mouvements nominaux: {nbNominalMovements}')
+            print('Il manque des mouvements dans les données' +
+                  ' pour calculer la vitesse commerciale')
+            return
+        
+        running_times[function] += timeOffset
+        
+        speeds = running_times.groupby(trackname)[function].sum()
+       
+        speeds['trackDistance'] = [tracklist[i]['trackNominalRunningDistance']
+                                  for i in nbtrackslist]
+        
+        if not dwells:
+            dwells = [tracklist[i]['trackNominalDwellTimes'] for i in nbtrackslist]
+                                   
+        speeds['dwells'] = dwells
+        
+        for col in function:
+            speeds[col] = speeds['trackDistance'] / (
+                           speeds[col] + speeds['dwells']) *3.6
+        
+        speeds = speeds.reset_index()
+        
+        speeds = speeds.drop(columns=(['trackDistance', 'dwells']))
+
+        speeds.plot(x=trackname, kind='bar', figsize=figsize, color=colors,
+                    **kwargs)
+        
+        functionNames=[]
+        for f in function:
+            if f == 'min':
+                functionNames.append('Minis')
+            elif f == 'mean':
+                functionNames.append('Moyens')
+            elif f == 'max':
+                functionNames.append('Maxis')
+            elif f == 'median':
+                functionNames.append('Medians')
+            else:
+                functionNames.append(f)
+        
+        decorators['legendLabels'] = functionNames
+        
+        self.__set_decorators(decorators)
+        
+        return plt.show()
