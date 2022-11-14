@@ -1143,10 +1143,12 @@ class Carrousel:
             defaultTitle = "Différence entre temps de parcours moyen et mini par mouvement"
             defaultYLabel = "Différence de durée (s)"
             estimator = lambda x: np.mean(x) - np.min(x)
+            estimators = [np.mean, np.min]
         elif function == 'median-min':
             defaultTitle = "Différence entre temps de parcours médian et mini par mouvement"
             defaultYLabel = "Différence de durée (s)"
             estimator = lambda x: np.median(x) - np.min(x)
+            estimators = [np.median, np.min]
         elif function == 'median':
             defaultTitle = "Temps de parcours median par mouvement"
             estimator = np.median
@@ -1200,8 +1202,9 @@ class Carrousel:
                     estimator=estimator, **kwargs)
         
         if trace_moy and (function == 'mean-min') or (function == 'median-min'):
-            times = data.groupby(x)[y].agg(estimator).reset_index()
-            lostTimeMean = times[y].mean()
+            times = data.groupby(x)[y].agg(estimators).reset_index()
+            times['lostTime'] = times.iloc[:,-2] - times.iloc[:,-1]
+            lostTimeMean = times['lostTime's].mean()
             plt.axhline(lostTimeMean, color='r', ls='--',
                 label=f"Temps moyen perdu par station {lostTimeMean:.1f}s")
                         
@@ -1691,7 +1694,13 @@ class Carrousel:
             ordre=None
         
         missed_stops_pct_by_cat = data.groupby(cat)[x].value_counts(
-            normalize=True).unstack()[False].fillna(0).round(3)*100
+            normalize=True).unstack()
+        if False in list(missed_stops_pct_by_cat.columns):
+            missed_stops_pct_by_cat = (
+                missed_stops_pct_by_cat[False].fillna(0).round(3)*100)
+        else:
+            missed_stops_pct_by_cat[False] = 0
+            missed_stops_pct_by_cat = missed_stops_pct_by_cat[False]
 
         sns.barplot(x=missed_stops_pct_by_cat.index,
                     y=missed_stops_pct_by_cat.values,

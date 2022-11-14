@@ -30,6 +30,7 @@ MG_format = {
                 'NumTrain': 'Train',
                 'Date_Stop': 'DateStop',
                 'End_track_id': 'StopTrackId',
+                'End_track': 'StopTrackId',
                 'Stop_Station': 'StopStation',
                 'Start_Station': 'StartStation',
                 'Sens': 'Direction',
@@ -38,7 +39,9 @@ MG_format = {
                 'Duree_MVT': 'Duree',
                 'Train_correctly_docked': 'TrainCorrectlyDocked',
                 'Nb_cycle_NV_piloting_command_sup_40percent': 'NVCommandSup40p',
-                'Nb_cycle_NV_piloting_command_sup_50percent': 'NVCommandSup50p'
+                'Nb_cycle_NV_piloting_command_sup_50percent': 'NVCommandSup50p',
+                'Nb_cycle_50ms_NV_piloting_command_sup_40percent': 'NVCommandSup40p',
+                'Nb_cycle_50ms_NV_piloting_command_sup_50percent': 'NVCommandSup50p'
                 },
     'movement_cols_drop': [
                 'Date_Start', 'Abscisse_T_Start',
