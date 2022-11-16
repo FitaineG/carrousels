@@ -1204,7 +1204,7 @@ class Carrousel:
         if trace_moy and (function == 'mean-min') or (function == 'median-min'):
             times = data.groupby(x)[y].agg(estimators).reset_index()
             times['lostTime'] = times.iloc[:,-2] - times.iloc[:,-1]
-            lostTimeMean = times['lostTime's].mean()
+            lostTimeMean = times['lostTime'].mean()
             plt.axhline(lostTimeMean, color='r', ls='--',
                 label=f"Temps moyen perdu par station {lostTimeMean:.1f}s")
                         
